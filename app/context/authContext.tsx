@@ -3,16 +3,16 @@ import React, { createContext, useContext, useEffect, useState, type ReactNode }
 import { useNavigate } from "react-router";    
 import supabase from "~/lib/supabase";
 
-type User = {
-  email: string;
-  email_verified: boolean;
-  phone_verified: boolean;
-  sub: string;
-  username: string;
-  fullName: string;
-  image: string;
-  updated_at: Date;
-};
+// type User = {
+//   email: string;
+//   email_verified: boolean;
+//   phone_verified: boolean;
+//   sub: string;
+//   username: string;
+//   fullName: string;
+//   image: string;
+//   updated_at: Date;
+// };
 
 type IAuthContext = {
   user: AuthUser | null;

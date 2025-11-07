@@ -1,19 +1,13 @@
 import type { Route } from "./+types/home";
-import { FaCircleChevronRight } from "react-icons/fa6";
-import { cn } from "~/lib/utils";
 import { useEffect, useRef, useState } from "react";
-import { IoEllipsisHorizontal } from "react-icons/io5";
-import {
-  FaHeart,
-  FaRegHeart,
-  FaRegComment,
-  FaRegBookmark,
-  FaBookmark,
-} from "react-icons/fa";
-import { PiPaperPlaneTilt } from "react-icons/pi";
-import { BsEmojiSmile } from "react-icons/bs";
 import { useAuth } from "~/context/authContext";
-import { useNavigate } from "react-router";
+import { cn } from "~/lib/utils";
+import supabase from "~/lib/supabase";
+import PostCard from "~/components/PostCard";
+import type { post } from "~/lib/types";
+import { FaCircleChevronRight } from "react-icons/fa6";
+
+
 
 export function meta({ }: Route.MetaArgs) {
   return [
@@ -32,6 +26,73 @@ export default function Home() {
   const [isLiked, setIsLiked] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [posts, setPosts] = useState<post[]>([]);
+  const [newPostAvailable, setNewPostAvailable] = useState(false);
+  const [refetchingPost, setRefectingPost] = useState(false);
+
+  // fetch posts
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("post")
+          // .select("*, ic_post_collaborators(*)")
+          .select("*, author:user_profile!post_author_id_fkey1(*)")
+          .order("created_at", { ascending: false });
+        error && console.log(error);
+        if (data) {
+          console.log(data);
+          setPosts(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    const subscription = supabase
+      .channel("ic_posts_insert")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "post" },
+        (payload) => {
+          console.log("Change received!", payload);
+          if (payload.new) {
+            setNewPostAvailable(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const reFetchPosts = async () => {
+    setRefectingPost(true);
+    try {
+      const { data, error } = await supabase
+        .from("post")
+        // .select("*, ic_post_collaborators(*)")
+        .select("*, author:ic_users!ic_posts_author_id_fkey1(*)")
+        .order("created_at", { ascending: false });
+      error && console.log(error);
+      if (data) {
+        // console.log(data);
+        setPosts(data);
+        setNewPostAvailable(false);
+      }
+    } catch (error: any) {
+      console.error(error);
+      alert(error.message);
+    } finally {
+      setRefectingPost(false);
+    }
+  };
 
   const handleScrollLeft = () => {
     const userStories = userStoriesRef.current;
@@ -122,105 +183,22 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="post-container flex flex-col">
-          <div className="max-w-[470px] w-full mx-auto mb-5">
-            <div className="flex items-center justify-between">
-              {/*Post Header*/}
-              <div className="flex items-center gap-3 pl-1 pb-3">
-                <img src="images/rcf_funaab.jpg" alt="rcf" className="size-9 rounded-full" />
-                <div>
-                  <div className="flex items-center gap-1">
-                    <h3 className="text-[14px] font-bold">rcf_funaab</h3>
-                    <div className="size-[2px] bg-[#a6a6a6]"></div>
-                    <p className="text-sm text-gray-400 -mb-0.5">1d</p>
-                  </div>
-                  <p className="text-[12px]">Redemption City, Isolu, Alabata.</p>
-                </div>
-              </div>
-              <button>
-                <IoEllipsisHorizontal />
-              </button>
-            </div>
+        <div className="">
 
-            <div className="border border-[#dbdbdb] rounded-sm">
-              <div className="aspect-auto">
-                <img className="w-full h-full object-cover" src="images/post.jpg" alt="post" />
-              </div>
-            </div>
+          <div
+            className="max-w-[470px] w-full mx-auto mb-5"
+          >
+            {posts.map((post, index) => (
+              <PostCard key={index} post={post} index={index} />
+            ))}
 
-            {/* Post Footer */}
-            <div className="py-3 ">
-              {/* Action Buttons */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-5">
-                  <button className="outline-none focus:outline-none" onClick={handleLike}>
-                    {isLiked ? (
-                      <FaHeart size={24} className="text-red-500" />
-                    ) : (
-                      <FaRegHeart size={24} className="" />
-                    )}
-                  </button>
-                  <button className="outline-none focus:outline-none">
-                    <FaRegComment size={24} className="" />
-                  </button>
-                  <button className="outline-none focus:outline-none">
-                    <PiPaperPlaneTilt size={24} className="" />
-                  </button>
-                </div>
-
-                <button className="outline-none focus:outline-none" onClick={handleSave}>
-                  {isSaved ? (
-                    <FaBookmark size={24} className="dark:text-white" />
-                  ) : (
-                    <FaRegBookmark size={24} className="dark:text-white" />
-                  )}
-                </button>
-              </div>
-
-              {/* Likes count */}
-              <div className="mb-2">
-                <p className="text-[13px] font-semibold cursor-pointer dark:text-white">
-                  {likesCount} likes
-                </p>
-              </div>
-
-              {/* Caption */}
-              <div className="mb-2">
-                <p className="text-[13px] dark:text-white">
-                  <span className="font-semibold mr-2 cursor-pointer">rcf_funaab</span> A spiritual awakening that has imprinted eternity in our hearts....
-                </p>
-                <p className="text-[14px] text-[#8f8f8f] cursor-pointer">more</p>
-              </div>
-
-              {/* View comments */}
-              <div className="mb-2">
-                <button className="text-[14px] text-[#8f8f8f] cursor-pointer">
-                  View 1 comment
-                </button>
-              </div>
-
-              {/* Add comment */}
-              <div className="flex items-center justify-between">
-                <input type="text" placeholder="add a comment..." className="w-full bg-transparent whitespace-normal text-[14px] placeholder-[#8f8f8f] outline-none focus:outline-none "
-                  value={
-                    // commentText 
-                    ""
-                  }
-                  onChange={(e) => {
-                    // setCommentText(e.target.value)
-                  }}
-                />
-                <div>
-                  <BsEmojiSmile className="text-[#8f8f8f] cursor-pointer" />
-                </div>
-              </div>
-            </div>
-            <hr className="text-[#dbdbdb]" />
           </div>
+        </div>
 
-          <div className="max-w-[470px] w-full mx-auto mb-5">
+        {/**Old postcard */}
+        {/* <div className="max-w-[470px] w-full mx-auto mb-5">
             <div className="flex items-center justify-between">
-              {/*Post Header*/}
+              
               <div className="flex items-center gap-3 pl-1 pb-3">
                 <img src="images/rcf_funaab.jpg" alt="rcf" className="size-9 rounded-full" />
                 <div>
@@ -243,9 +221,9 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Post Footer */}
+            
             <div className="py-3 ">
-              {/* Action Buttons */}
+              
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-5">
                   <button className="outline-none focus:outline-none" onClick={handleLike}>
@@ -272,14 +250,14 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* Likes count */}
+              
               <div className="mb-2">
                 <p className="text-[13px] font-semibold cursor-pointer dark:text-white">
                   {likesCount} likes
                 </p>
               </div>
 
-              {/* Caption */}
+              
               <div className="mb-2">
                 <p className="text-[13px] dark:text-white">
                   <span className="font-semibold mr-2 cursor-pointer">rcf_funaab</span> A spiritual awakening that has imprinted eternity in our hearts....
@@ -287,14 +265,14 @@ export default function Home() {
                 <p className="text-[14px] text-[#8f8f8f] cursor-pointer">more</p>
               </div>
 
-              {/* View comments */}
+              
               <div className="mb-2">
                 <button className="text-[14px] text-[#8f8f8f] cursor-pointer">
                   View 1 comment
                 </button>
               </div>
 
-              {/* Add comment */}
+              
               <div className="flex items-center justify-between">
                 <input type="text" placeholder="add a comment..." className="w-full bg-transparent whitespace-normal text-[14px] placeholder-[#8f8f8f] outline-none focus:outline-none " />
                 <div>
@@ -303,9 +281,10 @@ export default function Home() {
               </div>
             </div>
             <hr className="text-[#dbdbdb]" />
-          </div>
-        </div>
+          </div> */}
+
       </div>
+
       <div className="right mt-9 w-[320px]">
         <div className="px-4 space-y-6">
           {/*UserProfile Section*/}

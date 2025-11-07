@@ -158,6 +158,17 @@ export default function CompleteProfile() {
 
         imageUrl = publicUrl;
       }
+      // Upsert user profile in Supabase
+      const { error: userError } = await supabase.from("user_profile").upsert({
+        auth_user: user?.id,
+        username: formData.username,
+        fullName: formData.fullName,
+        image: imageUrl,
+      });
+
+      if (userError) {
+        throw userError;
+      }
 
       // Update user metadata in Supabase
       const { error } = await supabase.auth.updateUser({
@@ -184,6 +195,8 @@ export default function CompleteProfile() {
           },
         };
         setUser(updatedUser);
+
+
       }
 
       navigate("/");
@@ -286,11 +299,10 @@ export default function CompleteProfile() {
                       key={avatar.id}
                       type="button"
                       onClick={() => handleAvatarSelect(avatar.id)}
-                      className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${
-                        selectedAvatar === avatar.id
+                      className={`w-12 h-12 rounded-full overflow-hidden border-2 transition-colors ${selectedAvatar === avatar.id
                           ? "border-blue-500"
                           : "border-gray-600 hover:border-gray-400"
-                      }`}
+                        }`}
                     >
                       <img
                         src={avatar.src}
@@ -340,11 +352,10 @@ export default function CompleteProfile() {
                 placeholder="Username"
                 value={formData.username}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-3 bg-black border rounded-md text-white placeholder-gray-400 focus:outline-none text-sm ${
-                  errors.username
+                className={`w-full px-3 py-3 bg-black border rounded-md text-white placeholder-gray-400 focus:outline-none text-sm ${errors.username
                     ? "border-red-500"
                     : "border-[#262626] focus:border-gray-400"
-                }`}
+                  }`}
               />
               {errors.username && (
                 <p className="text-red-500 text-xs mt-1">{errors.username}</p>
@@ -359,12 +370,11 @@ export default function CompleteProfile() {
                 placeholder="Full name"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className={`w-full px-3 py-3 bg-black border rounded-md text-white placeholder-gray-400 focus:outline-none text-sm ${
-                  errors.fullName
+                className={`w-full px-3 py-3 bg-black border rounded-md text-white placeholder-gray-400 focus:outline-none text-sm ${errors.fullName
                     ? "border-red-500"
                     : "border-[#262626] focus:border-gray-400"
-                }`}
-              />\\\\\\\\\\
+                  }`}
+              />
               {errors.fullName && (
                 <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
               )}
