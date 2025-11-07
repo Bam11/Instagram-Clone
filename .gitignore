@@ -5,5 +5,5 @@
 /.react-router/
 /build/
 
-.env.local
+/.env.local/
 
