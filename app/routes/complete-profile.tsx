@@ -162,7 +162,7 @@ export default function CompleteProfile() {
       const { error: userError } = await supabase.from("user_profile").upsert({
         auth_user: user?.id,
         username: formData.username,
-        fullName: formData.fullName,
+        fullname: formData.fullName,
         image: imageUrl,
       });
 

@@ -1,11 +1,12 @@
-import React, { useCallback, useState } from 'react'
-import { FaArrowLeft, FaLongArrowAltLeft, FaSearchPlus } from 'react-icons/fa';
-import { IoCloseSharp } from 'react-icons/io5';
+import React, { useCallback, useEffect, useState } from 'react'
+import { FaLongArrowAltLeft } from 'react-icons/fa';
+import { IoCheckmarkOutline, IoCloseSharp } from 'react-icons/io5';
+import { FiChevronDown, FiChevronUp, FiUserPlus } from 'react-icons/fi';
+import { TbLoader3 } from 'react-icons/tb';
 import { useNavigate } from 'react-router';
 import { useAuth } from '~/context/authContext';
 import supabase from '~/lib/supabase';
 import { useDropzone } from 'react-dropzone';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import type { post } from '~/lib/types';
 import { CiFaceSmile } from 'react-icons/ci';
 import Cropper from 'react-easy-crop';
@@ -25,7 +26,7 @@ export default function CreatePost() {
 
 
   const [isopen, setisopen] = useState(false);
-  const [uplodedImageUrl, setuplodedImageUrl] = useState<string | null>(null); 
+  const [uplodedImageUrl, setuplodedImageUrl] = useState<string | null>(null);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [file, setFile] = useState<File | null>(null);
   const [dataURL, setDataURL] = useState<string | ArrayBuffer | null>(null);
@@ -45,7 +46,7 @@ export default function CreatePost() {
 
   //cropping
   const createCroppedImage = useCallback(async () => {
-    if(!file) return;
+    if (!file) return;
     try {
       const croppedImg = await getCroppedImg(
         URL.createObjectURL(file),
@@ -98,14 +99,15 @@ export default function CreatePost() {
   // const selectedFile = acceptedFiles[0]
   // console.log(selectedFile);
 
-  const handleShare = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleShare = async () => { //{/*e: React.FormEvent<HTMLFormElement>*/} to be in the async()
+    // e.preventDefault();
+    // return alert(step)
     if (!user || !file) return alert("Please fill in all fields");
     setLoading(true);
     try {
       let mediaUrl = "";
 
-      if(!file){
+      if (!file) {
         alert("Please Selct a File");
         setLoading(false);
         return;
@@ -118,7 +120,7 @@ export default function CreatePost() {
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("ic_posts")
         .upload(filePath, file);
-        console.log("filepath", filePath);
+      console.log("filepath", filePath);
 
       if (uploadError || !uploadData.path) {
         console.log("uploadError", uploadError);
@@ -129,7 +131,7 @@ export default function CreatePost() {
       const {
         data: { publicUrl },
       } = supabase.storage.from("ic_posts").getPublicUrl(uploadData.path);
-      console.log("mediaURL",mediaUrl);
+      console.log("mediaURL", mediaUrl);
       mediaUrl = publicUrl;
 
       if (!mediaUrl) {
@@ -137,7 +139,7 @@ export default function CreatePost() {
         return alert("Failed to upload media")
       };
 
-      const newPost : Partial<post> = {
+      const newPost: Partial<post> = {
         author_id: user.id,
         caption,
         media: mediaUrl,
@@ -146,9 +148,9 @@ export default function CreatePost() {
       };
 
       const { error } = await supabase
-        .from("post")
+        .from("post") //check to my premature post
         .insert([newPost]);
-        
+
       if (error) {
         console.error(error);
         alert("Error Inserting Posts");
@@ -188,10 +190,8 @@ export default function CreatePost() {
       turnOffComments: false,
       shareToFacebook: false,
     });
-    navigate("/");
+    navigate("/");     
   }
-
-  
 
   return (
     <>
@@ -236,25 +236,22 @@ export default function CreatePost() {
                     id="fileinput"
                     onChange={handleFileChange}
                   />
-                  
-                    <div>
-                      <label htmlFor="fileinput" className="">
-                        <div className="flex flex-col items-center justify-center gap-3">
-                          <svg
-                            aria-label="Icon to represent media such as images or videos" className="x1lliihq x1n2onr6 x5n08af" fill="currentColor" height="77" role="img" viewBox="0 0 97.6 77.3" width="96"><title>Icon to represent media such as images or videos</title><path d="M16.3 24h.3c2.8-.2 4.9-2.6 4.8-5.4-.2-2.8-2.6-4.9-5.4-4.8s-4.9 2.6-4.8 5.4c.1 2.7 2.4 4.8 5.1 4.8zm-2.4-7.2c.5-.6 1.3-1 2.1-1h.2c1.7 0 3.1 1.4 3.1 3.1 0 1.7-1.4 3.1-3.1 3.1-1.7 0-3.1-1.4-3.1-3.1 0-.8.3-1.5.8-2.1z" fill="currentColor"></path><path d="M84.7 18.4 58 16.9l-.2-3c-.3-5.7-5.2-10.1-11-9.8L12.9 6c-5.7.3-10.1 5.3-9.8 11L5 51v.8c.7 5.2 5.1 9.1 10.3 9.1h.6l21.7-1.2v.6c-.3 5.7 4 10.7 9.8 11l34 2h.6c5.5 0 10.1-4.3 10.4-9.8l2-34c.4-5.8-4-10.7-9.7-11.1zM7.2 10.8C8.7 9.1 10.8 8.1 13 8l34-1.9c4.6-.3 8.6 3.3 8.9 7.9l.2 2.8-5.3-.3c-5.7-.3-10.7 4-11 9.8l-.6 9.5-9.5 10.7c-.2.3-.6.4-1 .5-.4 0-.7-.1-1-.4l-7.8-7c-1.4-1.3-3.5-1.1-4.8.3L7 49 5.2 17c-.2-2.3.6-4.5 2-6.2zm8.7 48c-4.3.2-8.1-2.8-8.8-7.1l9.4-10.5c.2-.3.6-.4 1-.5.4 0 .7.1 1 .4l7.8 7c.7.6 1.6.9 2.5.9.9 0 1.7-.5 2.3-1.1l7.8-8.8-1.1 18.6-21.9 1.1zm76.5-29.5-2 34c-.3 4.6-4.3 8.2-8.9 7.9l-34-2c-4.6-.3-8.2-4.3-7.9-8.9l2-34c.3-4.4 3.9-7.9 8.4-7.9h.5l34 2c4.7.3 8.2 4.3 7.9 8.9z" fill="currentColor"></path><path d="M78.2 41.6 61.3 30.5c-2.1-1.4-4.9-.8-6.2 1.3-.4.7-.7 1.4-.7 2.2l-1.2 20.1c-.1 2.5 1.7 4.6 4.2 4.8h.3c.7 0 1.4-.2 2-.5l18-9c2.2-1.1 3.1-3.8 2-6-.4-.7-.9-1.3-1.5-1.8zm-1.4 6-18 9c-.4.2-.8.3-1.3.3-.4 0-.9-.2-1.2-.4-.7-.5-1.2-1.3-1.1-2.2l1.2-20.1c.1-.9.6-1.7 1.4-2.1.8-.4 1.7-.3 2.5.1L77 43.3c1.2.8 1.5 2.3.7 3.4-.2.4-.5.7-.9.9z" fill="currentColor"></path>
-                          </svg>
-                          <p className="text-lg">
-                            Drag photos and videos here
-                          </p>
-                          <div className="text-white py-1 px-4 rounded-lg cursor-pointer bg-[#4a5ef9] hover:bg-[#293edd]">
-                            Select from computer
-                          </div>
+
+                  <div>
+                    <label htmlFor="fileinput" className="">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <svg
+                          aria-label="Icon to represent media such as images or videos" className="x1lliihq x1n2onr6 x5n08af" fill="currentColor" height="77" role="img" viewBox="0 0 97.6 77.3" width="96"><title>Icon to represent media such as images or videos</title><path d="M16.3 24h.3c2.8-.2 4.9-2.6 4.8-5.4-.2-2.8-2.6-4.9-5.4-4.8s-4.9 2.6-4.8 5.4c.1 2.7 2.4 4.8 5.1 4.8zm-2.4-7.2c.5-.6 1.3-1 2.1-1h.2c1.7 0 3.1 1.4 3.1 3.1 0 1.7-1.4 3.1-3.1 3.1-1.7 0-3.1-1.4-3.1-3.1 0-.8.3-1.5.8-2.1z" fill="currentColor"></path><path d="M84.7 18.4 58 16.9l-.2-3c-.3-5.7-5.2-10.1-11-9.8L12.9 6c-5.7.3-10.1 5.3-9.8 11L5 51v.8c.7 5.2 5.1 9.1 10.3 9.1h.6l21.7-1.2v.6c-.3 5.7 4 10.7 9.8 11l34 2h.6c5.5 0 10.1-4.3 10.4-9.8l2-34c.4-5.8-4-10.7-9.7-11.1zM7.2 10.8C8.7 9.1 10.8 8.1 13 8l34-1.9c4.6-.3 8.6 3.3 8.9 7.9l.2 2.8-5.3-.3c-5.7-.3-10.7 4-11 9.8l-.6 9.5-9.5 10.7c-.2.3-.6.4-1 .5-.4 0-.7-.1-1-.4l-7.8-7c-1.4-1.3-3.5-1.1-4.8.3L7 49 5.2 17c-.2-2.3.6-4.5 2-6.2zm8.7 48c-4.3.2-8.1-2.8-8.8-7.1l9.4-10.5c.2-.3.6-.4 1-.5.4 0 .7.1 1 .4l7.8 7c.7.6 1.6.9 2.5.9.9 0 1.7-.5 2.3-1.1l7.8-8.8-1.1 18.6-21.9 1.1zm76.5-29.5-2 34c-.3 4.6-4.3 8.2-8.9 7.9l-34-2c-4.6-.3-8.2-4.3-7.9-8.9l2-34c.3-4.4 3.9-7.9 8.4-7.9h.5l34 2c4.7.3 8.2 4.3 7.9 8.9z" fill="currentColor"></path><path d="M78.2 41.6 61.3 30.5c-2.1-1.4-4.9-.8-6.2 1.3-.4.7-.7 1.4-.7 2.2l-1.2 20.1c-.1 2.5 1.7 4.6 4.2 4.8h.3c.7 0 1.4-.2 2-.5l18-9c2.2-1.1 3.1-3.8 2-6-.4-.7-.9-1.3-1.5-1.8zm-1.4 6-18 9c-.4.2-.8.3-1.3.3-.4 0-.9-.2-1.2-.4-.7-.5-1.2-1.3-1.1-2.2l1.2-20.1c.1-.9.6-1.7 1.4-2.1.8-.4 1.7-.3 2.5.1L77 43.3c1.2.8 1.5 2.3.7 3.4-.2.4-.5.7-.9.9z" fill="currentColor"></path>
+                        </svg>
+                        <p className="text-lg">
+                          Drag photos and videos here
+                        </p>
+                        <div className="text-white py-1 px-4 rounded-lg cursor-pointer bg-[#4a5ef9] hover:bg-[#293edd]">
+                          Select from computer
                         </div>
-                      </label>
-                    </div>
-                
-
-
+                      </div>
+                    </label>
+                  </div>
                 </div>
               </>
             )}
@@ -278,10 +275,17 @@ export default function CreatePost() {
                   </p>
                   <button className="py-1 px-4 rounded-lg text-[#2536d0] cursor-pointer"
                     type={step === 3 ? "submit" : "button"}
-                    form={step === 3 ? "createPostForm" : undefined}
+                    // form={step === 3 ? "createPostForm" : undefined}
                     onClick={() => {
                       if (step === 2) {
                         setStep(3);
+                      }
+                      if (step === 2 && !croppedImage) {
+                        createCroppedImage();
+                      }
+
+                      if(step === 3){
+                        handleShare()
                       }
                     }}
                   >
@@ -289,10 +293,9 @@ export default function CreatePost() {
                   </button>
                 </div>
 
-                <form id="createPostForm"
-                  onSubmit={handleShare}
+                <div //form id="createPostForm" onSubmit{handleShare}
                   className="bg-white flex justify-center items-center w-full h-full rounded-b-4xl"
-                > {!croppedImage ? 
+                > {!croppedImage ?
                   (
                     <div className="flex size-full">
                       <div className="w-full relative rounded-4xl">
@@ -303,6 +306,7 @@ export default function CreatePost() {
                         /> */}
                         <Cropper
                           image={URL.createObjectURL(file)}
+                          video={URL.createObjectURL(file)}
                           crop={crop}
                           zoom={zoom}
                           aspect={5 / 6}
@@ -310,10 +314,8 @@ export default function CreatePost() {
                           onCropComplete={onCropComplete}
                           onZoomChange={setZoom}
                         />
-
                       </div>
                       <div className="absolute -bottom-10 left-20">
-
                         <input
                           type="range"
                           min="1"
@@ -328,34 +330,31 @@ export default function CreatePost() {
                           <svg
                             aria-label="Select zoom" className="x1lliihq x1n2onr6 x5n08af" fill="currentColor" height={16} role="img" viewBox="0 0 24 24" width={16}><title>Select zoom</title><path d="m22.707 21.293-4.825-4.825a9.519 9.519 0 1 0-1.414 1.414l4.825 4.825a1 1 0 0 0 1.414-1.414ZM10.5 18.001a7.5 7.5 0 1 1 7.5-7.5 7.509 7.509 0 0 1-7.5 7.5Zm3.5-8.5h-2.5v-2.5a1 1 0 1 0-2 0v2.5H7a1 1 0 1 0 0 2h2.5v2.5a1 1 0 0 0 2 0v-2.5H14a1 1 0 0 0 0-2Z" />
                           </svg>
-
                           {/* className="bg-black/50 text-[50px] p-2 text-white font-normal rounded-full" Zoom: {zoom.toFixed(1)}x */}
                         </label>
                       </div>
                       <div className="absolute bottom-0 ">
-                        <button
+                        {/* <button
                           onClick={createCroppedImage}
                           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                           style={{ backgroundColor: '#3b82f6' }}
                         >
                           Crop
-                        </button>
+                        </button> */}
                       </div>
                     </div>
-                ) : (
-                     <div className="flex size-full">
-                        <div className="w-full relative rounded-4xl">
-                          <img
-                            src={croppedImage}
-                            alt="Cropped"
-                          />
-                        </div>
+                  ) : (
+                    <div className="flex size-full">
+                      <div className="w-full relative rounded-4xl">
+                        <img
+                          src={croppedImage}
+                          alt="Cropped"
+                        />
                       </div>
-                )}
-                  
+                    </div>
+                  )}
 
                   {step === 3 && croppedImage && (
-                    
                     <div className="min-w-[300px] max-w-[300px] border-l-[0.2px] border-[#969696] h-full dark:bg-[#262626] overflow-y-auto">
                       <div className="px-4 h-[60px] flex items-center gap-3">
                         <img
@@ -395,10 +394,10 @@ export default function CreatePost() {
                       </div>
 
                       <div>
-                        {/* <Collaborators
+                        <Collaborators
                           selectedCollaborators={selectedCollaborators}
                           setSelectedCollaborators={setSelectedCollaborators}
-                        /> */}
+                        />
 
                         <div>
                           <button
@@ -485,10 +484,16 @@ export default function CreatePost() {
 
                     </div>
                   )}
-                </form>
+                </div>
               </>
             )}
           </div>
+
+          {/* {loading && (
+            <div className="absolute inset-0 bg-black/70 grid place-items-center">
+              <TbLoader3 size={28} className="text-white animate-spin" />
+            </div>
+          )} */}
         </div>
       )}
     </>
@@ -504,64 +509,224 @@ type Collaborator = {
   avatar: string;
 };
 
-// function Collaborators({
-//   selectedCollaborators,
-//   setSelectedCollaborators,
-// }: {
-//   selectedCollaborators: Collaborator[];
-//   setSelectedCollaborators: React.Dispatch<
-//     React.SetStateAction<Collaborator[]>
-//   >;
-// }) 
+function Collaborators({
+  selectedCollaborators,
+  setSelectedCollaborators,
+}: {
+  selectedCollaborators: Collaborator[];
+  setSelectedCollaborators: React.Dispatch<React.SetStateAction<Collaborator[]>>;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [users, setUsers] = useState<Collaborator[]>([]);
+  const [searchText, setSearchText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const perPage = 100;
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  useEffect(() => {
+    if (!searchText) return;
+    setTimeout(() => {
+      (async () => {
+        setLoading(true);
+        try {
+          const { data, error, count } = await supabase
+            .from("user_profile")
+            .select("*", { count: "exact", head: true })
+            .limit(perPage)
+            .range((page - 1) * perPage, page * perPage - 1)
+            .ilike("username", `%${searchText}%`);
+            // console.log("search data", data);
+
+          if (error) {
+            console.log(error);
+            alert(error.message);
+          } else {
+            setUsers(data || []);
+            setTotalPages(Math.ceil(count || 0 / perPage) || 1);
+          }
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }, 1000);
+  }, [searchText]);
+
+  return (
+    <div className="px-4 pt-4 flex items-center justify-between relative">
+      <input
+        type="text"
+        placeholder={
+          selectedCollaborators.length > 0
+            ? `${selectedCollaborators.length} People`
+            : "Add collaborators"
+        }
+        className="text-[#818181] outline-none text-base"
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
+        onFocus={() => {
+          setIsOpen(true);
+        }}
+        onBlur={() => {
+          setIsOpen(false);
+        }}
+      />
+      <button type="button" className="text-black cursor-pointer">
+        {/* <FiUserPlus size={16} /> */}
+        <svg 
+          aria-label="Add collaborators" className="x1lliihq x1n2onr6 x1roi4f4" fill="currentColor" height={16} role="img" viewBox="0 0 24 24" width={16}><title>Add collaborators</title><path d="M21 10a1 1 0 0 0-1 1v9c0 .932-.643 1.71-1.507 1.931C18.429 19.203 16.199 17 13.455 17H8.55c-2.745 0-4.974 2.204-5.037 4.933A1.999 1.999 0 0 1 2 20V6c0-1.103.897-2 2-2h9a1 1 0 1 0 0-2H4C1.794 2 0 3.794 0 6v14c0 2.206 1.794 4 4 4h14c2.206 0 4-1.794 4-4v-9a1 1 0 0 0-1-1zM8.549 19h4.906a3.05 3.05 0 0 1 3.045 3H5.505a3.05 3.05 0 0 1 3.044-3z" /><path d="M6.51 11.002c0 2.481 2.02 4.5 4.502 4.5 2.48 0 4.499-2.019 4.499-4.5s-2.019-4.5-4.5-4.5a4.506 4.506 0 0 0-4.5 4.5zm7 0c0 1.378-1.12 2.5-2.498 2.5-1.38 0-2.501-1.122-2.501-2.5s1.122-2.5 2.5-2.5a2.502 2.502 0 0 1 2.5 2.5zM23.001 3.002h-2.004V1a1 1 0 1 0-2 0v2.002H17a1 1 0 1 0 0 2h1.998v2.003a1 1 0 1 0 2 0V5.002h2.004a1 1 0 1 0 0-2z" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-[130%] left-0 w-full p-4 rounded-lg bg- grid place-items-center">
+          {users.length === 0 && !loading && (
+            <div className="mb-4 text-center h-[170px]">
+              <div className="size-12 mx-auto mb-4 border-2 border-white rounded-full flex items-center justify-center">
+                <FiUserPlus size={20} className="dark:text-white" />
+              </div>
+              <h3 className="dark:text-white text-base font-semibold mb-2">
+                Add collaborators
+              </h3>
+              <p className="text-[#909090] text-xs">
+                If they accept, their username will be added to the post. It
+                will be shared with their followers and shown on their profile.
+              </p>
+            </div>
+          )}
+          {(users.length > 0 || selectedCollaborators.length > 0 || loading) && (
+            <>
+              {loading ? (
+                <div className="h-[200px] grid place-items-center">
+                  <TbLoader3 size={20} className="dark:text-white animate-spin" />
+                </div>
+              ) : (
+                <div className="h-[200px] space-y-2 overflow-y-auto">
+                  <div className="dark:text-white text-sm font-medium">
+                    Collaborators
+                  </div>
+                  {users.map((user,index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-4 justify-between cursor-pointer hover:bg-[#262626] rounded-lg p-2"
+                      onClick={()=>{
+                        if (selectedCollaborators.some(
+                          (collaborator) => collaborator.id === user.id
+                        )
+                      ) {
+                          setSelectedCollaborators(
+                            selectedCollaborators.filter(
+                              (collaborator) => collaborator.id !== user.id
+                            )
+                          );
+                        } else {
+                          setSelectedCollaborators([
+                            ...selectedCollaborators,
+                            user,
+                          ]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-full bg-white">
+                          <img 
+                            src={user.avatar} 
+                            alt={user.fullName}
+                            className="size-full rounded-full" 
+                          />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium dark:text-white">
+                            {user.username}
+                          </p>
+                          <p className="text-ellipsis text-sm overflow-hidden whitespace-nowrap dark:text-white">
+                            {user.bio}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`size-4 text-black border-white border rounded-full ${
+                          selectedCollaborators.some(
+                            (collaborator) => collaborator.id === user.id
+                          )
+                            ? "bg-white"
+                            : "bg-transparent"
+                        }`}
+                      >
+                        {selectedCollaborators.some(
+                          (collaborator) => collaborator.id === user.id
+                        ) && <IoCheckmarkOutline size={14} />}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                className="text-white cursor-pointer bg-blue-500 font-medium rounded-lg p-2 w-full" 
+                onClick={() => setIsOpen(false)}
+              >
+                Done        
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 //cropping
-const createImage = (url:any) =>
+const createImage = (url: any) =>
   new Promise((resolve, reject) => {
     const image = new Image();
     image.addEventListener('load', () => resolve(image));
     image.addEventListener('error', (error) => reject(error));
     image.src = url;
   });
- 
-const getCroppedImg = async (imageSrc:string, pixelCrop:any, rotation = 0) => {
+
+const getCroppedImg = async (imageSrc: string, pixelCrop: any, rotation = 0) => {
   const image: any = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
- 
+
   const maxSize = Math.max(image.width, image.height);
   const safeArea = 2 * ((maxSize / 2) * Math.sqrt(2));
- 
+
   // Set canvas dimensions to handle the rotation
   canvas.width = safeArea;
-  canvas.height = safeArea;       
-  if(!ctx)return;
- 
+  canvas.height = safeArea;
+  if (!ctx) return;
+
   // Translate canvas center point to the origin
   ctx.translate(safeArea / 2, safeArea / 2);
   ctx.rotate((rotation * Math.PI) / 180);
   ctx.translate(-safeArea / 2, -safeArea / 2);
- 
+
   // Draw the rotated image and drop off-canvas pixels
   ctx.drawImage(
     image,
     safeArea / 2 - image.width * 0.5,
     safeArea / 2 - image.height * 0.5
   );
- 
+
   // Extract the cropped portion
   const data = ctx.getImageData(0, 0, safeArea, safeArea);
- 
+
   // Set canvas width to final desired crop size
   canvas.width = pixelCrop.width;
   canvas.height = pixelCrop.height;
- 
+
   // Place the cropped data into a new canvas with proper position
   ctx.putImageData(
     data,
     0 - safeArea / 2 + image.width * 0.5 - pixelCrop.x,
     0 - safeArea / 2 + image.height * 0.5 - pixelCrop.y
   );
- 
+
   // Return as data URL
   return canvas.toDataURL('image/png');
 };

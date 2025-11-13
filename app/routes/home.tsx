@@ -77,8 +77,8 @@ export default function Home() {
     try {
       const { data, error } = await supabase
         .from("post")
-        // .select("*, ic_post_collaborators(*)")
-        .select("*, author:ic_users!ic_posts_author_id_fkey1(*)")
+        .select("*, ic_post_collaborators(*)")
+        .select("*, author:user_profile!post_author_id_fkey1(*)")
         .order("created_at", { ascending: false });
       error && console.log(error);
       if (data) {
